@@ -4,11 +4,13 @@
 
 struct stream_queue
 {
-    // Shared between multiple streams
+    // Shared between multiple queues
     struct stream_buffer *buffer;
 
     struct packet_node *head;
     struct packet_node *tail;
+
+    int32_t length;
 };
 
 struct stream_queue stream_queue_create(struct stream_buffer *buf);

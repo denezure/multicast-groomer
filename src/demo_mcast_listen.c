@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <signal.h>
 #include <sys/socket.h>
 
 #include <arpa/inet.h>
@@ -17,20 +18,21 @@
 #include <unistd.h>
 
 #include <stream_buffer.h>
+#include <stream_queue.h>
 
-void read_cb(evutil_socket_t fd, short events, void* arg);
+void read_cb(evutil_socket_t fd, short event, void* arg);
 
 struct rx_conn {
     struct in_addr mcast_ip;
     uint16_t mcast_port;
     uint16_t buffer_usage;
 
-    struct stream_buffer* buffer;
+    struct stream_queue* queue;
 
     struct event* read_event;
 };
 
-struct rx_conn* alloc_rx_conn(struct event_base* base, evutil_socket_t fd)
+struct rx_conn* alloc_rx_conn(struct event_base* base, evutil_socket_t fd, struct stream_queue* queue)
 {
     printf("Allocating mcast stream.\n");
     struct rx_conn* state = malloc(sizeof(*state));
@@ -38,8 +40,8 @@ struct rx_conn* alloc_rx_conn(struct event_base* base, evutil_socket_t fd)
         return NULL;
 
     state->read_event = event_new(base, fd, EV_READ | EV_PERSIST, read_cb, state);
-    state->buffer = stream_buffer_create(1024);
     state->buffer_usage = 0;
+    state->queue = queue;
 
     if (!state->read_event) {
         free(state);
@@ -52,11 +54,13 @@ struct rx_conn* alloc_rx_conn(struct event_base* base, evutil_socket_t fd)
 void free_rx_conn(struct rx_conn* state)
 {
     printf("Freeing mcast stream.\n");
+    stream_queue_destroy(state->queue);
     event_free(state->read_event);
     free(state);
 }
 
-int mcast_stream_create(struct event_base* base, struct in_addr mcast, struct in_addr local, uint16_t mcast_port)
+int mcast_stream_create(struct event_base* base, struct in_addr mcast,
+    struct in_addr local, uint16_t mcast_port, struct stream_buffer* buffer)
 {
     printf("Creating mcast socket...\n");
     evutil_socket_t nsock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -98,7 +102,10 @@ int mcast_stream_create(struct event_base* base, struct in_addr mcast, struct in
         return -1;
     }
 
-    struct rx_conn* state = alloc_rx_conn(base, nsock);
+    struct stream_queue* queue = calloc(1, sizeof(*queue));
+    queue->buffer = buffer;
+
+    struct rx_conn* state = alloc_rx_conn(base, nsock, queue);
     if (!state) {
         fprintf(stderr, "Allocation failed.\n");
         return -1;
@@ -119,17 +126,17 @@ void read_cb(evutil_socket_t fd, short events, void* arg)
     socklen_t src_addr_len;
 
     ssize_t result = 0;
-    union packet_node* packet = stream_buffer_get_free(state->buffer);
+    struct packet_node* packet = stream_buffer_get_free(state->queue->buffer);
 
     if (packet) {
         state->buffer_usage++;
-        result = recvfrom(fd, packet->data.buf, sizeof(packet->data.buf), 0, (struct sockaddr*)&src_addr, &src_addr_len);
-        packet->data.len = result;
+        result = recvfrom(fd, packet->buf, sizeof(packet->buf), 0, (struct sockaddr*)&src_addr, &src_addr_len);
+        packet->len = result;
 
         printf("Buffer usage: %u\n", state->buffer_usage);
 
         // For debugging, send the buffer right back.
-        stream_buffer_release_packet(state->buffer, packet);
+        stream_buffer_release_packet(state->queue->buffer, packet);
     }
 
     if (result > 0) {
@@ -150,34 +157,3 @@ void read_cb(evutil_socket_t fd, short events, void* arg)
     free_rx_conn(state);
 }
 
-int main(int argc, char** argv)
-{
-    if (argc < 4) {
-        printf("Usage: %s <group_address> <port> <interface_address>\n", argv[0]);
-        return -1;
-    }
-
-    int port = atoi(argv[2]);
-    char* groupAddress = argv[1];
-    char* interfaceAddress = argv[3];
-
-    struct in_addr local;
-
-    local.s_addr = inet_addr(interfaceAddress);
-
-    struct event_base* base = event_base_new();
-    if (!base) {
-        fprintf(stderr, "Error creating event loop.\n");
-    }
-
-    struct in_addr mcast;
-
-    mcast.s_addr = inet_addr(groupAddress);
-    if (mcast_stream_create(base, mcast, local, htons(port)) < 0) {
-        printf("Error creating mcast stream.\n");
-        return -1;
-    }
-
-    event_base_dispatch(base);
-    return 0;
-}

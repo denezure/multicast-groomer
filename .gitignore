@@ -1,0 +1,7 @@
+bin/
+obj/
+res/
+.ycm_extra_conf.py
+Makefile
+GroomerTest.make
+

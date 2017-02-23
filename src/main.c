@@ -1,33 +1,26 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <signal.h>
+#include <string.h>
 
-#include <arpa/inet.h>
 #include <event2/event.h>
 
+#include <config_loader.h>
+
+#include <mcast_session.h>
 #include <stream_buffer.h>
 
-#include <mcast_rx.h>
-#include <mcast_tx.h>
+#define CONFIG_FILE_NAME "multicast-groomer.yaml"
 
-void signal_cb(evutil_socket_t sock, short event, void* arg);
+static void signal_cb(evutil_socket_t sock, short event, void* arg);
 
 int main(int argc, char** argv)
 {
-    if (argc < 4) {
-        printf("Usage: %s <group_address> <port> <interface_address>\n", argv[0]);
-        return -1;
-    }
+    (void)argc;
+    (void)argv;
 
-    int port = atoi(argv[2]);
-    char* groupAddress = argv[1];
-    char* interfaceAddress = argv[3];
-
-    int32_t bufferCount = 1 << 12;
-
-    struct in_addr local;
-
-    local.s_addr = inet_addr(interfaceAddress);
+    int32_t bufferCount = 1 << 14;
+    int32_t bufferSize = 1400;
 
     struct event_base* base = event_base_new();
     if (!base) {
@@ -41,21 +34,34 @@ int main(int argc, char** argv)
         fprintf(stderr, "Error creating SIGINT handler.\n");
     }
 
-    struct stream_buffer *globalBuffer = stream_buffer_create(bufferCount);
+    struct stream_buffer* globalBuffer = stream_buffer_create(bufferCount, bufferSize);
 
-    struct in_addr mcast;
+    struct mcast_config* config = NULL;
 
-    mcast.s_addr = inet_addr(groupAddress);
-    if (mcast_stream_create(base, mcast, local, htons(port)) < 0) {
-        printf("Error creating mcast stream.\n");
+    if (config_loader_get(CONFIG_FILE_NAME, &config)) {
+        fputs("Error loading config.\n", stderr);
         return -1;
     }
 
+    // Initialize the control system first (TODO)
+
+    // Initialize each session
+
+    struct mcast_session_config *sessionConfig = config->sessionConfig;
+    while (sessionConfig)
+    {
+        // Do some stuff.
+
+        sessionConfig = sessionConfig->next;
+    }
+
     event_base_dispatch(base);
+    stream_buffer_destroy(globalBuffer);
+
     return 0;
 }
 
-void signal_cb(evutil_socket_t sock, short events, void* arg)
+static void signal_cb(evutil_socket_t sock, short events, void* arg)
 {
     (void)events;
     (void)sock;

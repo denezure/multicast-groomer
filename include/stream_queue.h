@@ -11,6 +11,8 @@ struct stream_queue
     struct packet_node *tail;
 
     int32_t length;
+
+    int32_t packetsThisInterval;
 };
 
 struct stream_queue stream_queue_create(struct stream_buffer *buf);

@@ -4,7 +4,7 @@
 
 struct stream_queue stream_queue_create(struct stream_buffer* buf)
 {
-    return (struct stream_queue){ buf, NULL, NULL, 0 };
+    return (struct stream_queue){ buf, NULL, NULL, 0 , 0};
 }
 
 void stream_queue_destroy(struct stream_queue* queue)
@@ -33,18 +33,13 @@ void stream_queue_destroy(struct stream_queue* queue)
 
 int32_t stream_queue_try_pull(struct stream_queue* queue, struct packet_node** node)
 {
-    if (!queue || !node || !*node)
-        return 0;
-
-    if (queue->tail) {
+    if (queue && node && queue->tail) {
         *node = queue->tail;
         queue->tail = queue->tail->next;
 
         (*node)->next = NULL;
 
-        --queue->length;
-
-        return 1;
+        return queue->length--;
     }
 
     return 0;
@@ -67,6 +62,7 @@ void stream_queue_push(struct stream_queue* queue, struct packet_node* node)
     }
 
     ++queue->length;
+    ++queue->packetsThisInterval;
 }
 
 int32_t stream_queue_length(struct stream_queue *queue)

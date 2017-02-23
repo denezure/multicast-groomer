@@ -14,7 +14,8 @@ project "GroomerTest"
 
   -- Criterion unit test library
   links { "criterion",
-          "event"}
+          "event",
+          "yaml" }
 
   filter "configurations:Debug"
     defines { "DEBUG" }

@@ -35,7 +35,7 @@ struct mcast_tx* mcast_tx_create(struct event_base* eventBase, const char* group
     }
 
     // Averaging period for packet rate
-    const int32_t microsecInterval = 250;
+    const int32_t microsecInterval = 150;
 
     // Number of bins that will hold packets per interval
     const int32_t numBins = microsecWindow / microsecInterval;
@@ -132,6 +132,8 @@ static void timer_cb(evutil_socket_t sock, short events, void* arg)
     // Should be equal to windowPacketTotal / windowPeriod otherwise
     int32_t packetPerTickAvg = (windowPacketTotal * tx->tickPeriod) / tx->windowTimeInterval;
     int32_t desiredPackets = min(max(1, packetPerTickAvg), queue->length);
+
+    printf("sending %d packets\n", desiredPackets);
 
     struct sockaddr_in addr = {
         .sin_family = AF_INET,

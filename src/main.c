@@ -43,20 +43,44 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    // Initialize the control system first (TODO)
+    struct mcast_session *session = NULL;
 
-    // Initialize each session
+    if (config) {
+        // Initialize the control system first (TODO: implement that system...)
+        printf("Controls:\n");
+        printf("  Interface: %s:%d\n", config->controlInterface, config->controlPort);
 
-    struct mcast_session_config *sessionConfig = config->sessionConfig;
-    while (sessionConfig)
-    {
-        // Do some stuff.
+        // Initialize each session
+        struct mcast_session_config* sessionConfig = config->sessionConfig;
+        while (sessionConfig) {
+            printf("Session:\n");
+            printf("  Name: %s\n", sessionConfig->name);
+            printf("  Source: %s:%d\n", sessionConfig->sourceGroup, sessionConfig->sourcePort);
+            printf("  Dest: %s:%d\n", sessionConfig->destinationGroup, sessionConfig->destinationPort);
+            printf("  Window: %d microseconds\n", sessionConfig->smoothingWindow);
 
-        sessionConfig = sessionConfig->next;
+            struct mcast_session* newSession = mcast_session_create(sessionConfig, base, globalBuffer);
+            newSession->next = session;
+            session = newSession;
+
+            sessionConfig = mcast_session_config_free(sessionConfig);
+        }
+
+        if (config->controlInterface) {
+            free(config->controlInterface);
+        }
+        free(config);
     }
 
     event_base_dispatch(base);
     stream_buffer_destroy(globalBuffer);
+
+    while (session)
+    {
+        struct mcast_session *next = session->next;
+        free(session);
+        session = next;
+    }
 
     return 0;
 }

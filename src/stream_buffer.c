@@ -23,6 +23,7 @@ struct stream_buffer* stream_buffer_create(int32_t bufferCount, int32_t bufferSi
     PACKET_BY_INDEX(nodes, bufferCount - 1, packetSize)->next = nodes;
     PACKET_BY_INDEX(nodes, bufferCount - 1, packetSize)->len = 0;
 
+    buf->buffer = nodes;
     buf->freeList = nodes;
     buf->bufferSize = bufferSize;
     buf->_packetSize = packetSize;

@@ -19,3 +19,5 @@ struct mcast_session {
 
 struct mcast_session* mcast_session_create(struct mcast_session_config* config,
     struct event_base* eventBase, struct stream_buffer* buffer);
+
+struct mcast_session_config* mcast_session_config_free(struct mcast_session_config *cfg);

@@ -13,7 +13,7 @@ streams:
       window_microsec: 500000
     - name: stream02
       source_group: 224.0.0.200
-      source_port: 8000
+      source_port: 8001
       dest_group: 224.0.0.202
       dest_port: 8000
       source_interface: 192.168.1.81
@@ -21,7 +21,7 @@ streams:
       window_microsec: 250000
     - name: stream03
       source_group: 224.0.0.200
-      source_port: 8000
+      source_port: 8002
       dest_group: 224.0.0.203
       dest_port: 8000
       source_interface: 192.168.1.81

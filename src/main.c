@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     (void)argv;
 
     int32_t bufferCount = 1 << 14;
-    int32_t bufferSize = 1400;
+    int32_t bufferSize = 1600;
 
     struct event_base* base = event_base_new();
     if (!base) {

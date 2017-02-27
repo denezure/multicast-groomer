@@ -10,7 +10,7 @@
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) < (y) ? (y) : (x))
 
-static struct timeval *common_timeout = NULL;
+static struct timeval* common_timeout = NULL;
 
 static void timer_cb(evutil_socket_t sock, short events, void* arg);
 
@@ -71,10 +71,9 @@ struct mcast_tx* mcast_tx_create(struct event_base* eventBase, const char* group
         return NULL;
     }
 
-    if (!common_timeout)
-    {
+    if (!common_timeout) {
         struct timeval timeout = { 0, microsecInterval };
-        common_timeout = (struct timeval*)event_base_init_common_timeout(eventBase, &timeout); 
+        common_timeout = (struct timeval*)event_base_init_common_timeout(eventBase, &timeout);
     }
 
     event_add(tx->timer_event, common_timeout);
@@ -84,17 +83,15 @@ struct mcast_tx* mcast_tx_create(struct event_base* eventBase, const char* group
 
 static int mcast_tx_config_socket(evutil_socket_t* sock, struct in_addr* local)
 {
-    {
-        struct sockaddr_in sin;
+    struct sockaddr_in sin;
 
-        sin.sin_family = AF_INET;
-        sin.sin_addr = *local;
-        sin.sin_port = 0;
+    sin.sin_family = AF_INET;
+    sin.sin_addr = *local;
+    sin.sin_port = 0;
 
-        if (bind(*sock, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
-            fprintf(stderr, "bind(): failed.\n");
-            return -1;
-        }
+    if (bind(*sock, (struct sockaddr*)&sin, sizeof(sin)) < 0) {
+        fprintf(stderr, "bind(): failed.\n");
+        return -1;
     }
 
     return 0;
@@ -107,9 +104,13 @@ static void timer_cb(evutil_socket_t sock, short events, void* arg)
 
     struct mcast_tx* tx = arg;
 
-    struct stream_queue *queue = tx->queue;
+    struct stream_queue* queue = tx->queue;
     int32_t windowWriteIndex = tx->windowWriteIndex;
     int32_t packetsThisInterval = queue->packetsThisInterval;
+
+    if (packetsThisInterval > 0) {
+        printf("Inverval packet count: %d\n", packetsThisInterval);
+    }
 
     // Set the newly found packet count
     tx->packetBins[tx->windowWriteIndex] = packetsThisInterval;
@@ -133,6 +134,10 @@ static void timer_cb(evutil_socket_t sock, short events, void* arg)
     int32_t packetPerTickAvg = (windowPacketTotal * tx->tickPeriod) / tx->windowTimeInterval;
     int32_t desiredPackets = min(max(1, packetPerTickAvg), queue->length);
 
+    if (desiredPackets > 0) {
+        //printf("Desired packet sends: %d\n", desiredPackets);
+    }
+
     struct sockaddr_in addr = {
         .sin_family = AF_INET,
         .sin_port = htons(tx->port),
@@ -144,6 +149,8 @@ static void timer_cb(evutil_socket_t sock, short events, void* arg)
     struct packet_node* packet = NULL;
     while ((desiredPackets-- > 0) && stream_queue_try_pull(queue, &packet) > 0) {
         ssize_t result = sendto(tx->sock, packet->buf, packet->len, 0, (struct sockaddr*)&addr, sz);
+
+        //printf("  Sent packet... address: 0x%p\n", packet);
 
         // How do we really want to handle this?
         if (result < 0) {

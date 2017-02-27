@@ -2,6 +2,8 @@
 
 #include <stdlib.h>
 
+#ifndef WIN32
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
@@ -9,6 +11,13 @@
 
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) < (y) ? (y) : (x))
+
+#else
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+#endif
 
 static struct timeval* common_timeout = NULL;
 
@@ -30,7 +39,7 @@ struct mcast_tx* mcast_tx_create(struct event_base* eventBase, const char* group
     if (mcast_tx_config_socket(&sock, &local) < 0) {
         fprintf(stderr, "Failed to create TX socket.\n");
 
-        close(sock);
+        evutil_closesocket(sock);
         return NULL;
     }
 
@@ -45,7 +54,7 @@ struct mcast_tx* mcast_tx_create(struct event_base* eventBase, const char* group
     if (!tx) {
         fprintf(stderr, "Failed to allocate mcast_tx\n");
 
-        close(sock);
+        evutil_closesocket(sock);
         return NULL;
     }
 
@@ -67,7 +76,7 @@ struct mcast_tx* mcast_tx_create(struct event_base* eventBase, const char* group
         fprintf(stderr, "Failed to create TX event\n");
 
         free(tx);
-        close(sock);
+        evutil_closesocket(sock);
         return NULL;
     }
 

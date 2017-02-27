@@ -4,5 +4,7 @@ res/
 dumps/
 .ycm_extra_conf.py
 Makefile
-GroomerTest.make
+*.make
 log.txt
+*.vcxproj*
+*.sln

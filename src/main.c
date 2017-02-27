@@ -10,6 +10,12 @@
 #include <mcast_session.h>
 #include <stream_buffer.h>
 
+#ifdef WIN32
+
+#include <winsock2.h>
+
+#endif
+
 #define CONFIG_FILE_NAME "multicast-groomer.yaml"
 
 static void signal_cb(evutil_socket_t sock, short event, void* arg);
@@ -18,6 +24,21 @@ int main(int argc, char** argv)
 {
     (void)argc;
     (void)argv;
+
+#ifdef WIN32
+    WORD wVersionRequested;
+    WSADATA wsaData;
+    int err;
+
+    wVersionRequested = MAKEWORD(2, 2);
+
+    err = WSAStartup(wVersionRequested, &wsaData);    
+    if (err != 0)
+    {
+        printf("Error starting Winsock.\n");
+        return -1;
+    }
+#endif
 
     int32_t bufferCount = 1 << 14;
     int32_t bufferSize = 1600;
@@ -81,6 +102,10 @@ int main(int argc, char** argv)
         free(session);
         session = next;
     }
+
+#ifdef WIN32
+    WSACleanup();
+#endif
 
     return 0;
 }

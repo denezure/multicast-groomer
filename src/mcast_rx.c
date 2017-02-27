@@ -1,9 +1,18 @@
 #include <stdlib.h>
 
+#ifndef WIN32
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+
+#else
+
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+#endif
 
 #include <mcast_rx.h>
 
@@ -23,7 +32,7 @@ struct mcast_rx* mcast_rx_create(struct event_base* eventBase, const char* group
     if (mcast_rx_config_socket(&sock, &local, &group, htons(port)) < 0) {
         fprintf(stderr, "Failed to configure socket\n");
 
-        close(sock);
+        evutil_closesocket(sock);
         return NULL;
     }
 
@@ -31,7 +40,7 @@ struct mcast_rx* mcast_rx_create(struct event_base* eventBase, const char* group
     if (!rx) {
         fprintf(stderr, "Socket state allocation failed\n");
 
-        close(sock);
+        evutil_closesocket(sock);
         return NULL;
     }
 
@@ -47,7 +56,7 @@ struct mcast_rx* mcast_rx_create(struct event_base* eventBase, const char* group
         fprintf(stderr, "Socket event creation failed\n");
 
         free(rx);
-        close(sock);
+        evutil_closesocket(sock);
         return NULL;
     }
 
@@ -62,10 +71,7 @@ static int mcast_rx_config_socket(evutil_socket_t* sock, const struct in_addr* l
 {
     evutil_make_socket_nonblocking(*sock);
 
-    {
-        int one = 1;
-        setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-    }
+    evutil_make_listen_socket_reuseable(*sock);
 
     {
         struct sockaddr_in sin;
@@ -80,17 +86,21 @@ static int mcast_rx_config_socket(evutil_socket_t* sock, const struct in_addr* l
         }
     }
 
-    {
-        int loop = 1;
-        if (setsockopt(*sock, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)) < 0) {
-            fprintf(stderr, "setsockopt(): loop failed.\n");
-            return -1;
-        }
+#ifndef WIN32
+    int loop = 1;
+    if (setsockopt(*sock, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)) < 0) {
+        fprintf(stderr, "setsockopt(): loop failed.\n");
+        return -1;
     }
+#endif
 
     struct ip_mreq mreq = {.imr_multiaddr = *groupAddr, .imr_interface = *localAddr };
 
+#ifndef WIN32
     if (setsockopt(*sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) < 0) {
+#else
+    if (setsockopt(*sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq)) < 0) {
+#endif
         fprintf(stderr, "setsockopt(): add membership failed.\n");
         return -1;
     }
@@ -104,7 +114,7 @@ static void read_cb(evutil_socket_t fd, short events, void* arg)
     struct mcast_rx* state = arg;
 
     struct sockaddr_in src_addr;
-    socklen_t src_addr_len;
+    ev_socklen_t src_addr_len;
 
     ssize_t result = 0;
     struct packet_node* packet = stream_buffer_acquire_packet(state->queue->buffer);

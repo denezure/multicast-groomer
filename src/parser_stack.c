@@ -152,7 +152,7 @@ void parser_stack_print(struct parser_stack *stack)
                 printf("SEQEND | ");
                 break;
             case VALUE:
-                printf("V('%s') | ", val);
+                printf("V('%s') | ", (char*)val);
                 break;
             default:
                 printf("??? | ");

@@ -20,6 +20,7 @@ struct stream_buffer* stream_buffer_create(int32_t bufferCount, int32_t bufferSi
         PACKET_BY_INDEX(nodes, i, packetSize)->len = 0;
     }
 
+    // Loop last packet back to first
     PACKET_BY_INDEX(nodes, bufferCount - 1, packetSize)->next = nodes;
     PACKET_BY_INDEX(nodes, bufferCount - 1, packetSize)->len = 0;
 

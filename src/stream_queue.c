@@ -67,5 +67,8 @@ void stream_queue_push(struct stream_queue* queue, struct packet_node* node)
 
 int32_t stream_queue_length(struct stream_queue *queue)
 {
-    return queue->length;
+    if (queue)
+        return queue->length;
+
+    return 0;
 }

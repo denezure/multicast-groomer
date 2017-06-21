@@ -89,14 +89,11 @@ int config_loader_get(const char* filename, struct mcast_config** configPtr)
         // Update the stack
         switch (event.type) {
         case YAML_NO_EVENT:
-            break;
         case YAML_STREAM_START_EVENT:
-            break;
         case YAML_STREAM_END_EVENT:
-            break;
         case YAML_DOCUMENT_START_EVENT:
-            break;
         case YAML_DOCUMENT_END_EVENT:
+        case YAML_ALIAS_EVENT:
             break;
         case YAML_SEQUENCE_START_EVENT:
             parser_stack_push(stack, SEQSTART, NULL);
@@ -121,8 +118,6 @@ int config_loader_get(const char* filename, struct mcast_config** configPtr)
                 free(val);
                 parser_stack_pop(stack);
             }
-            break;
-        case YAML_ALIAS_EVENT:
             break;
         case YAML_SCALAR_EVENT: {
             char* value = strdup((char*)event.data.scalar.value);

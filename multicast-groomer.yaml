@@ -8,6 +8,6 @@ streams:
       source_port: 8000
       dest_group: 224.0.0.201
       dest_port: 8001
-      source_interface: 192.168.1.87
-      dest_interface: 192.168.1.87
+      source_interface: 192.168.0.109
+      dest_interface: 192.168.0.109
       window_microsec: 500000

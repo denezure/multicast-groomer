@@ -121,6 +121,7 @@ static void read_cb(evutil_socket_t fd, short events, void* arg)
 
     if (packet) {
         result = recvfrom(fd, packet->buf, state->queue->buffer->bufferSize, 0, (struct sockaddr*)&src_addr, &src_addr_len);
+        printf("RX!\n");
     }
 
     if (result > 0) {

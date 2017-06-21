@@ -117,10 +117,6 @@ static void timer_cb(evutil_socket_t sock, short events, void* arg)
     int32_t windowWriteIndex = tx->windowWriteIndex;
     int32_t packetsThisInterval = queue->packetsThisInterval;
 
-    if (packetsThisInterval > 0) {
-        printf("Inverval packet count: %d\n", packetsThisInterval);
-    }
-
     // Set the newly found packet count
     tx->packetBins[tx->windowWriteIndex] = packetsThisInterval;
 
@@ -154,6 +150,8 @@ static void timer_cb(evutil_socket_t sock, short events, void* arg)
     struct packet_node* packet = NULL;
     while ((desiredPackets-- > 0) && stream_queue_try_pull(queue, &packet) > 0) {
         ssize_t result = sendto(tx->sock, packet->buf, packet->len, 0, (struct sockaddr*)&addr, sz);
+
+        printf("TX!\n");
 
         //printf("  Sent packet... address: 0x%p\n", packet);
 

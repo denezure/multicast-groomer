@@ -67,10 +67,6 @@ int main(int argc, char** argv)
     struct mcast_session *session = NULL;
 
     if (config) {
-        // Initialize the control system first (TODO: implement that system...)
-        printf("Controls:\n");
-        printf("  Interface: %s:%d\n", config->controlInterface, config->controlPort);
-
         // Initialize each session
         struct mcast_session_config* sessionConfig = config->sessionConfig;
         while (sessionConfig) {
@@ -80,6 +76,7 @@ int main(int argc, char** argv)
             printf("  Dest: %s:%d\n", sessionConfig->destinationGroup, sessionConfig->destinationPort);
             printf("  Window: %d microseconds\n", sessionConfig->smoothingWindow);
 
+            // Append to session linked list
             struct mcast_session* newSession = mcast_session_create(sessionConfig, base, globalBuffer);
             newSession->next = session;
             session = newSession;
@@ -94,14 +91,16 @@ int main(int argc, char** argv)
     }
 
     event_base_dispatch(base);
-    stream_buffer_destroy(globalBuffer);
 
+    // Free session linked list
     while (session)
     {
         struct mcast_session *next = session->next;
         free(session);
         session = next;
     }
+
+    stream_buffer_destroy(globalBuffer);
 
 #ifdef WIN32
     WSACleanup();

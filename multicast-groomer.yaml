@@ -1,13 +1,9 @@
-control:
-    interface: 192.168.1.81
-    port: 8002
-
 streams:
     - name: stream01
       source_group: 224.0.0.200
       source_port: 8000
       dest_group: 224.0.0.201
       dest_port: 8001
-      source_interface: 192.168.0.109
-      dest_interface: 192.168.0.109
+      source_interface: 127.0.0.1
+      dest_interface: 127.0.0.1
       window_microsec: 500000

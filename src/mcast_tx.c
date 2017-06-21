@@ -103,6 +103,9 @@ static int mcast_tx_config_socket(evutil_socket_t* sock, struct in_addr* local)
         return -1;
     }
 
+    int loop = 1;
+    setsockopt(*sock, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
+
     return 0;
 }
 
